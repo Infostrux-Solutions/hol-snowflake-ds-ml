@@ -146,23 +146,34 @@ GRANT USAGE ON INTEGRATION pypi_access_integration TO ROLE ROLE_HOL_LAB_DATASCIE
 GRANT READ ON GIT REPOSITORY HOL_LAB_DATASCIENCE.LAB.hol_iff TO ROLE ROLE_HOL_LAB_DATASCIENCE;
 
 -- ------------------------------------------------------------------------------------------------------------------------ --
--- 4. SETUP NAMED NOTEBOOKS --
+-- 4. SETUP NAMED USERS, SCHEMAS, STAGES, NOTEBOOKS --
 -- ------------------------------------------------------------------------------------------------------------------------ --
 
 USE ROLE ROLE_HOL_LAB_DATASCIENCE;-- Deploy 
 
--- ###### Script to setup the lab attendance schemas and notebooks.
+SET initial_password = '**********';
+
 DECLARE 
-    i INTEGER;
     participant_name VARCHAR;
+    lab_role STRING DEFAULT 'ROLE_HOL_LAB_DATASCIENCE';
 BEGIN
     -- Define your array of names here
-    -- LET participants := ARRAY_CONSTRUCT('nasko_grozdanov','fabian_hernandez', 'corey_henschel', 'adam_nathan','akshay_goyle','alexis_blanchet','alix_pommier','bart_rijksen','boyu_niu','cassiopee_vannier','christelle_guyomard','david_bontems','kristel_ledraoullec','moamen_elsherbiny','moin_haque','niels_akeroyd','reddy_ayyalapu','yanis_penvern');
-
     LET participants := ARRAY_CONSTRUCT('nasko_grozdanov','brooke_giannattasio','emily_petroni','kaitlyn_wells','cory_stratford','rob_silva','jonathan_wolf','nagesh_cherukuri','drew_whitaker');
 
     FOR i IN 0 TO ARRAY_SIZE(participants) - 1 DO
         participant_name := participants[i];
+
+        USE ROLE SECURITYADMIN;
+
+        LET user_name varchar := participants[i];
+        CREATE OR REPLACE USER IDENTIFIER(:user_name)
+            PASSWORD = $initial_password
+            DEFAULT_ROLE = :lab_role
+            MUST_CHANGE_PASSWORD = FALSE;
+
+        GRANT ROLE IDENTIFIER(:lab_role) TO USER IDENTIFIER(:user_name);
+
+        USE ROLE ROLE_HOL_LAB_DATASCIENCE
 
         -- Create participant's schema 
         let schema_name := 'HOL_LAB_DATASCIENCE.' || participant_name;        
@@ -179,77 +190,61 @@ BEGIN
          MAIN_FILE = 'LAB_NOTEBOOK.ipynb'
          QUERY_WAREHOUSE = WH_1_HOL_LAB_DATASCIENCE;
     END FOR;
+    RETURN 'Successfully created NAMED USERS, SCHEMAS, STAGES, NOTEBOOKS';
 END;
 
+-- ------------------------------------------------------------------------------------------------------------------------ --
+-- 5. SETUP NAMELESS USERS, SCHEMAS, STAGES, NOTEBOOKS --
+-- ------------------------------------------------------------------------------------------------------------------------ --
 
--- ------------------------------------------------------------------------------------------------------------------------ --
--- 5. SETUP NAMELESS NOTEBOOKS --
--- ------------------------------------------------------------------------------------------------------------------------ --
 
+USE ROLE ROLE_HOL_LAB_DATASCIENCE;-- Deploy 
 
--- ------------------------------------------------------------------------------------------------------------------------ --
--- 6. SETUP NAMED USER OBJECTS --
--- ------------------------------------------------------------------------------------------------------------------------ --
 SET initial_password = '**********';
+SET participant_count = 2;
 
-USE ROLE SYSADMIN;
-USE WAREHOUSE WH_1_HOL_LAB_DATASCIENCE;
-
-DECLARE
-    role STRING DEFAULT 'ROLE_HOL_LAB_DATASCIENCE';
+DECLARE 
+    i INTEGER;
+    user_name VARCHAR;
+    lab_role STRING DEFAULT 'ROLE_HOL_LAB_DATASCIENCE';
+    user_prefix STRING DEFAULT 'LAB_USER_';
 BEGIN
 
-    LET participants := ARRAY_CONSTRUCT('nasko_grozdanov','brooke_giannattasio','emily_petroni','kaitlyn_wells','cory_stratford','rob_silva','jonathan_wolf','nagesh_cherukuri','drew_whitaker');
+    FOR i IN 1 TO $participant_count DO
 
-    FOR i IN 0 TO ARRAY_SIZE(participants) - 1 DO
+        LET user_name := user_prefix || i;
 
         USE ROLE SECURITYADMIN;
 
-        LET user_name varchar := participants[i];
-        CREATE USER IDENTIFIER(:user_name)
+        CREATE OR REPLACE USER IDENTIFIER(:user_name)
             PASSWORD = $initial_password
-            DEFAULT_ROLE = :role
+            DEFAULT_ROLE = :lab_role
             MUST_CHANGE_PASSWORD = FALSE;
 
-        GRANT ROLE IDENTIFIER(:role) TO USER IDENTIFIER(:user_name);
+        GRANT ROLE IDENTIFIER(:lab_role) TO USER IDENTIFIER(:user_name);
+
+        USE ROLE ROLE_HOL_LAB_DATASCIENCE;
+
+        -- Create participant's schema 
+        let schema_name := 'HOL_LAB_DATASCIENCE.' || user_name;        
+        CREATE OR REPLACE SCHEMA IDENTIFIER(:schema_name);
+
+        -- Create participant's stage 
+        let stage_name := 'HOL_LAB_DATASCIENCE.' || user_name || '.' || user_name;
+        CREATE OR REPLACE STAGE IDENTIFIER(:stage_name) DIRECTORY = (ENABLE = TRUE);
+
+        -- Copy notebook
+        let notebook_name := 'HOL_LAB_DATASCIENCE.' || user_name || '.' || user_name || '_HOL';
+        CREATE OR REPLACE NOTEBOOK IDENTIFIER(:notebook_name)
+         FROM '@HOL_LAB_DATASCIENCE.LAB.HOL_IFF/branches/main/'
+         MAIN_FILE = 'LAB_NOTEBOOK.ipynb'
+         QUERY_WAREHOUSE = WH_1_HOL_LAB_DATASCIENCE;
     END FOR;
-    USE ROLE SYSADMIN;
-    RETURN 'Successfully created lab user objects';
-END;
-
-
--- ------------------------------------------------------------------------------------------------------------------------ --
--- 7. SETUP NAMELESS USER OBJECTS (OPTIONAL) --
--- ------------------------------------------------------------------------------------------------------------------------ --
-
-SET participant_count = 2;
-SET initial_password = '**********';
-
-USE ROLE SYSADMIN;
-USE WAREHOUSE WH_1_HOL_LAB_DATASCIENCE;
-
-DECLARE
-    role STRING DEFAULT 'ROLE_HOL_LAB_DATASCIENCE';
-    user_prefix STRING DEFAULT 'LAB_USER_';
-BEGIN
-    FOR i IN 1 TO $participant_count DO
-
-            USE ROLE SECURITYADMIN;
-
-            LET user_name := user_prefix || i;
-            CREATE OR REPLACE USER IDENTIFIER(:user_name)
-            PASSWORD = $initial_password
-            DEFAULT_ROLE = :role
-            MUST_CHANGE_PASSWORD = FALSE;
-
-            GRANT ROLE IDENTIFIER(:role) TO USER IDENTIFIER(:user_name);
-        END FOR;
-    USE ROLE SYSADMIN;
-    RETURN 'Successfully created nameless lab user objects';
+    RETURN 'Successfully created NAMELESS USERS, SCHEMAS, STAGES, NOTEBOOKS';
 END;
 
 -- ------------------------------------------------------------------------------------------------------------------------ --
--- 8. DISABLE MFA (OPTIONAL) --
+-- 6. DISABLE MFA (OPTIONAL) --
 -- ------------------------------------------------------------------------------------------------------------------------ --
 
 USE ROLE ACCOUNTADMIN;
