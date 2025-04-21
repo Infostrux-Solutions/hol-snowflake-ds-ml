@@ -162,3 +162,19 @@ FROM (
     FROM table(generator(rowCount => $ROW_COUNT))
 ) 
 ORDER BY random();
+
+
+
+
+
+
+
+CREATE OR REPLACE TABLE HOL_LAB_DATASCIENCE.LAB.E_COMMERCE_COMMENTS (
+    key STRING,
+    name STRING,
+    brand STRING,
+    source STRING,
+    date_datetime TIMESTAMP,
+    review_translated_text VARIANT,
+    topics VARIANT
+);

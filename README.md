@@ -1,4 +1,4 @@
-# IFF Hands-On Lab
+# Hands-On Lab
 
 Welcome to the Hands-On Lab for Data Science in Snowflake! This repository contains all the necessary files and instructions to set up and run the lab environment using Snowflake, Streamlit, and various Python packages.
 
