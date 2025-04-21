@@ -18,24 +18,30 @@
 -- 15. Switch back to the new role to complete the setup.
 -- 16. Setup the participant's schemas and notebooks.
 */
-USE ROLE ORGADMIN;
+-- USE ROLE ORGADMIN;
 
-CREATE ORGANIZATION ACCOUNT HOL_LAB_DATASCIENCE
-    ADMIN_NAME = 'FABIAN'
-    ADMIN_PASSWORD = '*****'
-    FIRST_NAME = 'FABIAN'
-    LAST_NAME = 'HERNANDEZ'
-    EMAIL = 'fabian@infostrux.com'
-    MUST_CHANGE_PASSWORD = TRUE
-    EDITION = 'BUSINESS_CRITICAL'
-    REGION = 'AWS_US_WEST_2'
-    COMMENT = 'Snowflake account for IFF HOL in Paris-March, 2025';
-
-USE ROLE ACCOUNTADMIN;
+-- CREATE ORGANIZATION ACCOUNT HOL_LAB_DATASCIENCE
+--     ADMIN_NAME = 'FABIAN'
+--     ADMIN_PASSWORD = '*****'
+--     FIRST_NAME = 'FABIAN'
+--     LAST_NAME = 'HERNANDEZ'
+--     EMAIL = 'fabian@infostrux.com'
+--     MUST_CHANGE_PASSWORD = TRUE
+--     EDITION = 'BUSINESS_CRITICAL'
+--     REGION = 'AWS_US_WEST_2'
+--     COMMENT = 'Snowflake account for IFF HOL in Paris-March, 2025';
 
 USE ROLE ACCOUNTADMIN;
+
+-- ------------------------------------------------------------------------------------------------------------------------ --
+-- 1. SETUP DATABASES --
+-- ------------------------------------------------------------------------------------------------------------------------ --
 
 CREATE DATABASE HOL_LAB_DATASCIENCE;
+
+-- ------------------------------------------------------------------------------------------------------------------------ --
+-- 2. SETUP WAREHOUSES --
+-- ------------------------------------------------------------------------------------------------------------------------ --
 
 CREATE WAREHOUSE WH_1_HOL_LAB_DATASCIENCE
   WITH
@@ -80,6 +86,10 @@ CREATE WAREHOUSE WH_4_HOL_LAB_DATASCIENCE
   AUTO_SUSPEND = 300
   AUTO_RESUME = TRUE
   INITIALLY_SUSPENDED = TRUE;
+
+-- ------------------------------------------------------------------------------------------------------------------------ --
+-- 3. SETUP ROLES --
+-- ------------------------------------------------------------------------------------------------------------------------ --
   
 CREATE OR REPLACE ROLE ROLE_HOL_LAB_DATASCIENCE;
 GRANT OWNERSHIP ON DATABASE HOL_LAB_DATASCIENCE TO ROLE ROLE_HOL_LAB_DATASCIENCE;
@@ -101,9 +111,12 @@ GRANT CREATE STREAMLIT ON FUTURE SCHEMAS IN DATABASE HOL_LAB_DATASCIENCE TO ROLE
 GRANT CREATE MODEL ON FUTURE SCHEMAS IN DATABASE HOL_LAB_DATASCIENCE TO ROLE ROLE_HOL_LAB_DATASCIENCE;
 GRANT ROLE ROLE_HOL_LAB_DATASCIENCE TO ROLE SYSADMIN;
 
-
 -- User assignment.
 GRANT ROLE ROLE_HOL_LAB_DATASCIENCE TO USER NASKO;
+
+-- ------------------------------------------------------------------------------------------------------------------------ --
+-- 3. SETUP GIT INTEGRATION --
+-- ------------------------------------------------------------------------------------------------------------------------ --
 
 USE ROLE ROLE_HOL_LAB_DATASCIENCE;
 CREATE SCHEMA HOL_LAB_DATASCIENCE.LAB; 
@@ -132,6 +145,9 @@ CREATE OR REPLACE EXTERNAL ACCESS INTEGRATION pypi_access_integration
 GRANT USAGE ON INTEGRATION pypi_access_integration TO ROLE ROLE_HOL_LAB_DATASCIENCE;
 GRANT READ ON GIT REPOSITORY HOL_LAB_DATASCIENCE.LAB.hol_iff TO ROLE ROLE_HOL_LAB_DATASCIENCE;
 
+-- ------------------------------------------------------------------------------------------------------------------------ --
+-- 4. SETUP NAMED NOTEBOOKS --
+-- ------------------------------------------------------------------------------------------------------------------------ --
 
 USE ROLE ROLE_HOL_LAB_DATASCIENCE;-- Deploy 
 
@@ -164,3 +180,84 @@ BEGIN
          QUERY_WAREHOUSE = WH_1_HOL_LAB_DATASCIENCE;
     END FOR;
 END;
+
+
+-- ------------------------------------------------------------------------------------------------------------------------ --
+-- 5. SETUP NAMELESS NOTEBOOKS --
+-- ------------------------------------------------------------------------------------------------------------------------ --
+
+
+-- ------------------------------------------------------------------------------------------------------------------------ --
+-- 6. SETUP NAMED USER OBJECTS --
+-- ------------------------------------------------------------------------------------------------------------------------ --
+SET initial_password = '**********';
+
+USE ROLE SYSADMIN;
+USE WAREHOUSE WH_1_HOL_LAB_DATASCIENCE;
+
+DECLARE
+    role STRING DEFAULT 'ROLE_HOL_LAB_DATASCIENCE';
+BEGIN
+
+    LET participants := ARRAY_CONSTRUCT('nasko_grozdanov','brooke_giannattasio','emily_petroni','kaitlyn_wells','cory_stratford','rob_silva','jonathan_wolf','nagesh_cherukuri','drew_whitaker');
+
+    FOR i IN 0 TO ARRAY_SIZE(participants) - 1 DO
+
+        USE ROLE SECURITYADMIN;
+
+        LET user_name varchar := participants[i];
+        CREATE USER IDENTIFIER(:user_name)
+            PASSWORD = $initial_password
+            DEFAULT_ROLE = :role
+            MUST_CHANGE_PASSWORD = FALSE;
+
+        GRANT ROLE IDENTIFIER(:role) TO USER IDENTIFIER(:user_name);
+    END FOR;
+    USE ROLE SYSADMIN;
+    RETURN 'Successfully created lab user objects';
+END;
+
+
+-- ------------------------------------------------------------------------------------------------------------------------ --
+-- 7. SETUP NAMELESS USER OBJECTS (OPTIONAL) --
+-- ------------------------------------------------------------------------------------------------------------------------ --
+
+SET participant_count = 2;
+SET initial_password = '**********';
+
+USE ROLE SYSADMIN;
+USE WAREHOUSE WH_1_HOL_LAB_DATASCIENCE;
+
+DECLARE
+    role STRING DEFAULT 'ROLE_HOL_LAB_DATASCIENCE';
+    user_prefix STRING DEFAULT 'LAB_USER_';
+BEGIN
+    FOR i IN 1 TO $participant_count DO
+
+            USE ROLE SECURITYADMIN;
+
+            LET user_name := user_prefix || i;
+            CREATE OR REPLACE USER IDENTIFIER(:user_name)
+            PASSWORD = $initial_password
+            DEFAULT_ROLE = :role
+            MUST_CHANGE_PASSWORD = FALSE;
+
+            GRANT ROLE IDENTIFIER(:role) TO USER IDENTIFIER(:user_name);
+        END FOR;
+    USE ROLE SYSADMIN;
+    RETURN 'Successfully created nameless lab user objects';
+END;
+
+-- ------------------------------------------------------------------------------------------------------------------------ --
+-- 8. DISABLE MFA (OPTIONAL) --
+-- ------------------------------------------------------------------------------------------------------------------------ --
+
+USE ROLE ACCOUNTADMIN;
+USE DATABASE HOL_LAB_DATASCIENCE;
+USE SCHEMA LAB;
+
+CREATE AUTHENTICATION POLICY require_mfa_with_password_authentication_policy
+MFA_AUTHENTICATION_METHODS = ('PASSWORD')
+MFA_ENROLLMENT = OPTIONAL;
+
+ALTER ACCOUNT SET AUTHENTICATION POLICY require_mfa_with_password_authentication_policy;

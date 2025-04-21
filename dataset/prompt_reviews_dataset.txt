@@ -1,0 +1,25 @@
+I want you to come up with a list of 10 car companies and show me that list as JSON,
+then come up with 3 models they each sell in 2024 and show me that list as JSON,
+I then want you to create 50 entries for each of these cars with the following structure as an example using the following rules. 
+
+1. Generate unique keys for the key column
+2. for "name", generate the full model name (ex : BMW M3 2024) in the format that is most common for that car
+3. for "brand", generate the brand name in its most common form
+4. for "source" generate the full name of the brand and car but with small variations and even mistakes (ex: B.m.W m3 2024)
+5. unique date times in 2024
+6. review_translated_text should be a review of between 80 and 100 words, each review should be in english and unique about the car and bring up feelings and attributes of a car. Make sure the reviews use different writing styles and personalities.
+7. topics should include whether the review is positive or negative and the list of topics that are mentioned in the review such as speed, feel, braking, etc (make sure the topics are actually included in the review)
+
+{
+  "key": "123e4567-e89b-12d3-a456-426614174000",
+  "name": "BMW M3",
+  "brand": "BMW",
+  "source": "B.M.W. M3 2024",
+  "date_datetime": "2025-03-15 14:27:10",
+  "review_translated_text": "The delivery was fast, but the packaging could be improved.",
+  "topics": "{\"positive\": true, \"mentioned_topics\": [\"delivery, speed\", \"packaging\"]}"
+}
+
+I want the output as a JSON file properly formatted.
+
+To be clear I'm expecting 3 outputs, 2 JSONs and 1 JSON file
