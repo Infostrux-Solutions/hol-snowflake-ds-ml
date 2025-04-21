@@ -158,7 +158,7 @@ DECLARE
     lab_role STRING DEFAULT 'ROLE_HOL_LAB_DATASCIENCE';
 BEGIN
     -- Define your array of names here
-    LET participants := ARRAY_CONSTRUCT('nasko_grozdanov','brooke_giannattasio','emily_petroni','kaitlyn_wells','cory_stratford','rob_silva','jonathan_wolf','nagesh_cherukuri','drew_whitaker');
+    LET participants := ARRAY_CONSTRUCT('nasko_grozdanov','corey_henschel','fabian_hernandez');
 
     FOR i IN 0 TO ARRAY_SIZE(participants) - 1 DO
         participant_name := participants[i];
@@ -173,7 +173,7 @@ BEGIN
 
         GRANT ROLE IDENTIFIER(:lab_role) TO USER IDENTIFIER(:user_name);
 
-        USE ROLE ROLE_HOL_LAB_DATASCIENCE
+        USE ROLE ROLE_HOL_LAB_DATASCIENCE;
 
         -- Create participant's schema 
         let schema_name := 'HOL_LAB_DATASCIENCE.' || participant_name;        
@@ -194,7 +194,7 @@ BEGIN
 END;
 
 -- ------------------------------------------------------------------------------------------------------------------------ --
--- 5. SETUP NAMELESS USERS, SCHEMAS, STAGES, NOTEBOOKS --
+-- 5. SETUP NAMELESS USERS, SCHEMAS, STAGES, NOTEBOOKS (OPTIONAL) --
 -- ------------------------------------------------------------------------------------------------------------------------ --
 
 
