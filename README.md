@@ -48,6 +48,6 @@ Before you begin, ensure you have the following:
 
 3. **Set Up Snowflake Environment (manually)**
 
-   1. modify *setup.sql* to specify an inital password, edit the list of named users and set the number of nameless users to create and then run *setup.sql*
-   2. modify *generate_qualification_dataset.sql* to set the row_count and then run to manufacture the qualification dataset
-   3. create a table *HOL_LAB_DATASCIENCE.LAB.E_COMMERCE_REVIEWS* from the data_reviews_data.json file and make sure you do this using the *ROLE_HOLE_LAB_DATASCIENCE* role
+   1. modify **setup.sql** to specify an inital password, edit the list of named users and set the number of nameless users to create and then run **setup.sql**
+   2. modify **generate_qualification_dataset.sql** to set the row_count and then run to manufacture the qualification dataset
+   3. create a table **HOL_LAB_DATASCIENCE.LAB.E_COMMERCE_REVIEWS** from the data_reviews_data.json file and make sure you do this using the **ROLE_HOLE_LAB_DATASCIENCE** role
