@@ -1,0 +1,25 @@
+USE ROLE ROLE_HOL_LAB_DATASCIENCE;
+CREATE SCHEMA HOL_LAB_DATASCIENCE.LAB; 
+
+USE ROLE ACCOUNTADMIN;
+
+CREATE OR REPLACE API INTEGRATION HOL_LAB_DATASCIENCE_git_api_integration
+  API_PROVIDER = git_https_api
+  API_ALLOWED_PREFIXES = ('https://github.com/Infostrux-Solutions/')
+  ENABLED = TRUE;
+
+CREATE OR REPLACE GIT REPOSITORY HOL_LAB_DATASCIENCE.LAB.HOL
+  API_INTEGRATION = HOL_LAB_DATASCIENCE_git_api_integration
+  ORIGIN = 'https://github.com/Infostrux-Solutions/hol-snowflake-ds-ml';
+
+CREATE OR REPLACE NETWORK RULE pypi_network_rule
+  MODE = EGRESS
+  TYPE = HOST_PORT
+  VALUE_LIST = ('pypi.org', 'pypi.python.org', 'pythonhosted.org',  'files.pythonhosted.org');
+
+CREATE OR REPLACE EXTERNAL ACCESS INTEGRATION pypi_access_integration
+  ALLOWED_NETWORK_RULES = (pypi_network_rule)
+  ENABLED = true;
+
+GRANT USAGE ON INTEGRATION pypi_access_integration TO ROLE ROLE_HOL_LAB_DATASCIENCE;
+GRANT READ ON GIT REPOSITORY HOL_LAB_DATASCIENCE.LAB.HOL TO ROLE ROLE_HOL_LAB_DATASCIENCE; 

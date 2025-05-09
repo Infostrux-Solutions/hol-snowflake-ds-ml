@@ -1,3 +1,7 @@
+# This environment.yml file defines dependencies that should already be loaded
+# in Snowflake Notebooks. The dependencies listed below are required for
+# running the hands-on lab exercises and demos.
+
 name: app_environment
 dependencies:
   - plotly=5.24.1
